@@ -103,8 +103,7 @@ class AddressController extends AbstractController
 
         // Make search respect configured pages if there are some
         $pages = $this->request->getAttribute('currentContentObject')->data['pages'];
-
-        if (strlen($pages) > 0) {
+        if (is_string($pages) && trim($pages) !== '') {
             $this->querySettings->setRespectStoragePage(TRUE);
             $this->querySettings->setStoragePageIds(explode(',', $pages));
         } else {
@@ -349,24 +348,22 @@ class AddressController extends AbstractController
             $args['distance'] = null;
         }
 
-        $mapCenter = new \SICOR\SicAddress\Domain\Model\Address();
+        $mapCenter = new Address();
         $centerAddress = $this->service->getCenterAddressObjectFromFlexConfig();
+        $currentCountry = $args['country'] ?? "Deutschland";
+        $centerNotFound = false;
+
         if($centerAddress) {
             // Default: Use coordinates of center address for map center
             $mapCenter = clone $centerAddress;
+        } else {
+            // Use country center if available
+            $this->updateMapCenter($mapCenter, '', $currentCountry);
         }
 
-        $centerNotFound = false;
-        if(!empty($args['center'])) {
-            $currentCountry = $arg['country'] ?? "Deutschland";
-            $searchCenter = $this->geocodeService->getCoordinatesForPostalCode($args['center'], $currentCountry);
-            if($searchCenter && !empty($searchCenter['longitude']) && !empty($searchCenter['latitude'])) {
-                // Search: Use coordinates of found address for map center
-                $mapCenter->setLongitude($searchCenter['longitude']);
-                $mapCenter->setLatitude($searchCenter['latitude']);
-            }
-            else {
-                // We tried, but couldn't find it...
+        if (!empty($args['center'])) {
+            // Try to use center from user input (postal code)
+            if (!$this->updateMapCenter($mapCenter, $args['center'], $currentCountry)) {
                 $centerNotFound = true;
             }
         }
@@ -396,6 +393,21 @@ class AddressController extends AbstractController
             'distances' => $this->getDistances(),
             'radius' => $args['distance'],
         ]);
+    }
+
+    /**
+    * Helper method: calls the geocode service and writes found coordinates into the Address object.
+    * Returns true if coordinates were set, otherwise false.
+    */
+    private function updateMapCenter(Address $mapCenter, $postalcode, $country): bool
+    {
+        $searchCenter = $this->geocodeService->getCoordinatesForPostalCode($postalcode, $country);
+        if ($searchCenter && !empty($searchCenter['longitude']) && !empty($searchCenter['latitude'])) {
+            $mapCenter->setLongitude($searchCenter['longitude']);
+            $mapCenter->setLatitude($searchCenter['latitude']);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -614,7 +626,6 @@ class AddressController extends AbstractController
             case 'nicosdir': $template = 'NicosList.html'; break;
             case 'diakonie': $template = 'DiakonieList.html'; break;
             case 'duelmen': $template = 'DuelmenList.html'; break;
-            case 'massiv': $template = 'MassivList.html'; break;
             case 'obgdir': $template = 'OBGList.html'; break;
         }
         if (method_exists($this->view, 'setTemplate')) {

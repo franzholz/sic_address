@@ -35,13 +35,13 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class AddressRepository extends \TYPO3\CMS\Extbase\Persistence\Repository
 {
-    /**
-     * categoryRepository
-     *
-     * @var \SICOR\SicAddress\Domain\Repository\CategoryRepository
-     * @TYPO3\CMS\Extbase\Annotation\Inject
-     */
-    protected $categoryRepository = NULL;
+    protected ?CategoryRepository $categoryRepository;
+
+    public function __construct(CategoryRepository $categoryRepository)
+    {
+        $this->categoryRepository = $categoryRepository;
+        parent::__construct();
+    }
 
     /**
      * @var array
@@ -142,8 +142,9 @@ class AddressRepository extends \TYPO3\CMS\Extbase\Persistence\Repository
 
         // Make A-Z respect configured pages if there are some
         $where = "pid<>-1 ";
-        if(strlen($pages) > 0)
-            $where = "pid IN (".$pages.") ";
+        if (is_string($pages) && trim($pages) !== '') {
+            $where = "pid IN (" . $pages . ") ";
+        }
 
         // Standard constraints
         $languageAspect = GeneralUtility::makeInstance(Context::class)->getAspect('language');
@@ -201,11 +202,22 @@ class AddressRepository extends \TYPO3\CMS\Extbase\Persistence\Repository
         // Build category constraints
         if ($categories && count($categories) > 0)
         {
-            $catconstraints = array();
+            $catconstraints = [];
+            #1: Group categories by parent
             foreach ($categories as $category) {
-                $catconstraints[] = $query->contains("categories", $category->getUid());
+                $category = $this->categoryRepository->findByUid($category->getUid());
+                $parent = $category->getParent()->getUid();
+                if(!array_key_exists($parent, $catconstraints)) {
+                    $catconstraints[$parent] = [];
+                }
+                $catconstraints[$parent][] = $query->contains("categories", $category->getUid());
             }
-            $constraints[] = $query->logicalOr(...$catconstraints);
+            #2: Build OR constraints per parent group
+            foreach ($catconstraints as $parentGroupConstraints) {
+                if (!empty($parentGroupConstraints)) {
+                    $constraints[] = $query->logicalOr(...$parentGroupConstraints);
+                }
+            }
         }
 
         // Build filter constraint
@@ -248,46 +260,6 @@ class AddressRepository extends \TYPO3\CMS\Extbase\Persistence\Repository
         ];
 
         return $query->matching($query->logicalOr(...$constraints))->execute();
-    }
-
-    /**
-     *  Find all Map Markers matching current category selection
-     *
-     * @param $currentCategories
-     * @return array|\TYPO3\CMS\Extbase\Persistence\QueryResultInterface
-     */
-    public function findMapEntries($currentCategories)
-    {
-        $query = $this->createQuery();
-
-        $constraints = array(
-            $query->logicalNot(
-                $query->logicalOr(
-                    $query->equals('latitude', null),
-                    $query->equals('longitude', null)
-                )
-            )
-        );
-
-        foreach ($currentCategories as $maincat) {
-            $catConstraints = [];
-            foreach ($maincat['children'] as $subcat) {
-                if($subcat['active']) {
-                    $catConstraints[] = $query->contains('categories', $subcat['uid']);
-                }
-            }
-            if(!empty($catConstraints)) {
-                $constraints[] = $query->logicalAnd(
-                    $query->logicalOr(...$catConstraints)
-                );
-            }
-        }
-
-        $query->matching(
-            $query->logicalAnd(...$constraints)
-        );
-
-        return $query->execute();
     }
 
     /**

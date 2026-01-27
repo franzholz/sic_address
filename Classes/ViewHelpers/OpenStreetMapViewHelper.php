@@ -51,7 +51,7 @@ class OpenStreetMapViewHelper extends \TYPO3Fluid\Fluid\Core\ViewHelper\Abstract
             }
 
             if(!empty($icons[$categoryUid])) {
-                $markerSettings['icon'] = '.sic_address_icon_'. $id . '_' . $categoryUid;
+                $markerSettings['icon'] = 'sic_address_icon_'. $id . '_' . $categoryUid;
             }
 
             $markerObj .= 'var sic_address_marker_' . $id . '_' . $marker->getUid() . ' = L.marker(' . self::a2json($markerLatLng) .
@@ -124,7 +124,7 @@ JS;
                 $isArray = true;
             }
 
-            if(\is_string($val) && $val[0] !== '.' && $val[0] !== '[' && $val !== 'true' && $val !== 'false') {
+            if(\is_string($val) && $key !== 'icon' && $val[0] !== '[' && $val !== 'true' && $val !== 'false') {
                 $value = '"' . \addslashes(trim($val)) . '"';
             } else {
                 if(is_array($val)) {
