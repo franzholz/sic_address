@@ -32,6 +32,7 @@ use SICOR\SicAddress\Domain\Repository\AddressRepository;
 use SICOR\SicAddress\Domain\Repository\CategoryRepository;
 use SICOR\SicAddress\Domain\Repository\ContentRepository;
 use SICOR\SicAddress\Domain\Service\GeocodeService;
+use TYPO3\CMS\Core\Page\AssetCollector;
 use TYPO3\CMS\Core\Pagination\SimplePagination;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -113,7 +114,11 @@ class AddressController extends AbstractController
         $this->addressRepository->setDefaultQuerySettings($this->querySettings);
 
         // Include js
-        $GLOBALS['TSFE']->additionalFooterData['tx_sicaddress_sicaddress'] = '<script src="typo3conf/ext/sic_address/Resources/Public/Javascript/sicaddress.js" type="text/javascript"></script>';
+        GeneralUtility::makeInstance(AssetCollector::class)->addJavaScript(
+            'tx_sicaddress_sicaddress',
+            'EXT:sic_address/Resources/Public/Javascript/sicaddress.js',
+            ['defer' => 'defer']
+        );
     }
 
     protected function initializeView($view)

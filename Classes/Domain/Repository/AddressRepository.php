@@ -110,6 +110,9 @@ class AddressRepository extends \TYPO3\CMS\Extbase\Persistence\Repository
      */
     private function getParents($category, &$categoryList = array()) {
         $category = $this->categoryRepository->findByUid($category);
+        if ($category === null) {
+            return $categoryList;
+        }
         $categoryList[] = $category;
 
         if(!$category->getParent() || ($category->getParent() && $this->categoryRepository->findByParent($category)->count()) > 0) {
@@ -206,7 +209,8 @@ class AddressRepository extends \TYPO3\CMS\Extbase\Persistence\Repository
             #1: Group categories by parent
             foreach ($categories as $category) {
                 $category = $this->categoryRepository->findByUid($category->getUid());
-                $parent = $category->getParent()->getUid();
+                if ($category === null) continue;
+                $parent = $category->getParent() !== null ? $category->getParent()->getUid() : 0;
                 if(!array_key_exists($parent, $catconstraints)) {
                     $catconstraints[$parent] = [];
                 }
