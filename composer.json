@@ -11,8 +11,8 @@
 		}
 	],
 	"require": {
-		"typo3/cms-core": "^13.4",
-		"php": "^8"
+		"typo3/cms-core": "^14.3",
+		"php": "^8.3"
 	},
 	"authors":
 	[
@@ -32,7 +32,11 @@
 	},
 	"extra": {
 		"typo3/cms": {
-			"extension-key": "sic_address"
-		}
+			"extension-key": "sic_address",
+			"version": "6.2.0",
+			"Package": {
+				"providesPackages": {}
+			}
+		},
 	}
 }

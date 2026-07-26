@@ -208,7 +208,9 @@ class AddressController extends AbstractController
         $checkall = $this->request->hasArgument('checkall') ? $this->request->getArgument('checkall') : '';
 
         $this->fillAddressList($atozvalue, $categoryvalue, $filtervalue, $queryvalue, $distanceValue, $checkall);
-        $this->view->assign('listPageUid', $GLOBALS['TSFE']->id);
+        $pageInformation = $request->getAttribute('frontend.page.information');
+        $pageId = $pageInformation->getId();
+        $this->view->assign('listPageUid', $pageId);
 
         return $this->htmlResponse();
     }

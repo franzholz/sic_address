@@ -76,7 +76,7 @@ class ExportController extends ModuleController {
      *
      * return Vianovis XML
      */
-    public function exportVianovisAction() 
+    public function exportVianovisAction()
     {
         // Set template
         $customView = GeneralUtility::makeInstance(StandaloneView::class);
@@ -88,7 +88,8 @@ class ExportController extends ModuleController {
         $customView->assign("addresses", $adresses);
 
         // Domain
-        $domain = $GLOBALS['TSFE']->tmpl->setup['config.']['baseURL'];
+        $site = $this->request->getAttribute('site');
+        $domain = (string) $site->getBase();
         $customView->assign("domain", $domain);
 
         return $this->responseFactory->createResponse()
@@ -231,7 +232,7 @@ class ExportController extends ModuleController {
         foreach($values->toArray() as $key => $domainObject) {
             foreach($domainProperties as $property) {
                 if(is_array($property)) $property = $property[0];
-                
+
                 $propertyTitle = GeneralUtility::underscoredToLowerCamelCase($property->getTitle());
 
                 $value = ObjectAccess::getProperty($domainObject, $propertyTitle);
